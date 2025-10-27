@@ -37,11 +37,9 @@ jobs:
           OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
         run: |
           python - << 'EOF'
-          import sys
-          sys.path.append('src')
-          from collect import collect_all_sources
-          from classify_and_summarize import build_weekly_newsletter
-          from render import render_markdown, save_outputs
+          from src.collect import collect_all_sources
+          from src.classify_and_summarize import build_weekly_newsletter
+          from src.render import render_markdown, save_output
           
           news = collect_all_sources()
           newsletter = build_weekly_newsletter(news)
@@ -61,12 +59,10 @@ jobs:
           python - << 'EOF'
           import os
           from glob import glob
-          import sys
-          sys.path.append('src')
-          from send_email import send_newsletter_email
+          from src.send_email import send_newsletter_email  # ajustar para o pacote src
       
           # Pick the most recently generated newsletter file
-          files = sorted(glob('output/newsletter-*.md'))
+              files = sorted(glob('output/newsletter-*.md'))
           if not files:
               raise RuntimeError('Nenhum arquivo newsletter-* encontrado')
           latest = files[-1]
