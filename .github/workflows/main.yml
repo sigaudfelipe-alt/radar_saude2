@@ -39,7 +39,7 @@ jobs:
           python - << 'EOF'
           from src.collect import collect_all_sources
           from src.classify_and_summarize import build_weekly_newsletter
-          from src.render import render_markdown, save_output
+          from src.render import render_markdown, save_outputs
           
           news = collect_all_sources()
           newsletter = build_weekly_newsletter(news)
