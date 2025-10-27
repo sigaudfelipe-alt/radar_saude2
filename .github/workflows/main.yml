@@ -28,7 +28,8 @@ jobs:
 
       - name: Collect news
         run: |
-          python radar_saude/src/collect.py > radar_saude/output/collect_log.txt
+          mkdir -p output
+          python src/collect.py > output/collect_log.txt
 
       - name: Build newsletter
         env:
@@ -37,11 +38,11 @@ jobs:
         run: |
           python - << 'EOF'
           import sys
-          sys.path.append('radar_saude/src')
+          sys.path.append('src')
           from collect import collect_all_sources
           from classify_and_summarize import build_weekly_newsletter
           from render import render_markdown, save_outputs
-
+          
           news = collect_all_sources()
           newsletter = build_weekly_newsletter(news)
           md_text = render_markdown(newsletter)
@@ -60,15 +61,16 @@ jobs:
           python - << 'EOF'
           import os
           from glob import glob
-          sys.path.append('radar_saude/src')
+          import sys
+          sys.path.append('src')
           from send_email import send_newsletter_email
-
+      
           # Pick the most recently generated newsletter file
-          files = sorted(glob('radar_saude/output/newsletter-*.md'))
+          files = sorted(glob('output/newsletter-*.md'))
           if not files:
-            raise RuntimeError('Nenhum arquivo newsletter-* encontrado')
+              raise RuntimeError('Nenhum arquivo newsletter-* encontrado')
           latest = files[-1]
-
+      
           recipients = [x.strip() for x in os.environ['RECIPIENTS'].split(',') if x.strip()]
           send_newsletter_email(md_path=latest, to_list=recipients)
           print(f"Newsletter enviada para: {recipients}")
