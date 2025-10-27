@@ -59,10 +59,10 @@ jobs:
           python - << 'EOF'
           import os
           from glob import glob
-          from src.send_email import send_newsletter_email  # ajustar para o pacote src
+          from src.send_email import send_newsletter_email
       
-          # Pick the most recently generated newsletter file
-              files = sorted(glob('output/newsletter-*.md'))
+          # Procura o arquivo newsletter gerado
+          files = sorted(glob('output/newsletter-*.md'))
           if not files:
               raise RuntimeError('Nenhum arquivo newsletter-* encontrado')
           latest = files[-1]
