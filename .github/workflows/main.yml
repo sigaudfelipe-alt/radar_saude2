@@ -1,0 +1,74 @@
+name: radar-saude-weekly
+
+on:
+  schedule:
+    # At 21:00 UTC every Sunday (18:00 in São Paulo during DST).
+    - cron: "0 21 * * 0"
+  workflow_dispatch:
+    # Allow manual trigger via the GitHub UI
+
+jobs:
+  build-and-send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install project requirements
+          pip install -r radar_saude/requirements.txt
+
+      - name: Collect news
+        run: |
+          python radar_saude/src/collect.py > radar_saude/output/collect_log.txt
+
+      - name: Build newsletter
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
+        run: |
+          python - << 'EOF'
+          import sys
+          sys.path.append('radar_saude/src')
+          from collect import collect_all_sources
+          from classify_and_summarize import build_weekly_newsletter
+          from render import render_markdown, save_outputs
+
+          news = collect_all_sources()
+          newsletter = build_weekly_newsletter(news)
+          md_text = render_markdown(newsletter)
+          path = save_outputs(md_text)
+          print(f"Newsletter gerada em {path}")
+          EOF
+
+      - name: Send newsletter email
+        env:
+          EMAIL_SMTP_SERVER: ${{ secrets.EMAIL_SMTP_SERVER }}
+          EMAIL_SMTP_PORT: ${{ secrets.EMAIL_SMTP_PORT }}
+          EMAIL_SMTP_USER: ${{ secrets.EMAIL_SMTP_USER }}
+          EMAIL_SMTP_PASS: ${{ secrets.EMAIL_SMTP_PASS }}
+          RECIPIENTS: ${{ secrets.RECIPIENTS }}
+        run: |
+          python - << 'EOF'
+          import os
+          from glob import glob
+          sys.path.append('radar_saude/src')
+          from send_email import send_newsletter_email
+
+          # Pick the most recently generated newsletter file
+          files = sorted(glob('radar_saude/output/newsletter-*.md'))
+          if not files:
+            raise RuntimeError('Nenhum arquivo newsletter-* encontrado')
+          latest = files[-1]
+
+          recipients = [x.strip() for x in os.environ['RECIPIENTS'].split(',') if x.strip()]
+          send_newsletter_email(md_path=latest, to_list=recipients)
+          print(f"Newsletter enviada para: {recipients}")
+          EOF
