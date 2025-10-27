@@ -29,7 +29,7 @@ jobs:
       - name: Collect news
         run: |
           mkdir -p output
-          python src/collect.py > output/collect_log.txt
+          python -m src.collect > output/collect_log.txt
 
       - name: Build newsletter
         env:
